@@ -30,6 +30,8 @@ export class OrderController {
 
   public async getSingleOrder(req: Request, res: Response) {
     const { op, filial } = req.query;
+    console.log(op);
+
     try {
       const record = await pb
         .collection("order")
