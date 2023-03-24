@@ -30,7 +30,8 @@ export class OrderController {
 
   public async getSingleOrder(req: Request, res: Response) {
     const { op, filial } = req.query;
-    console.log(op);
+    console.log(`\r\n********************`);
+    console.log(`Searcing op: ${op}`);
 
     try {
       const record = await pb
@@ -45,6 +46,7 @@ export class OrderController {
         record.lote,
         record.dtvalidade
       );
+      console.log(`Op found (PB): ${op}`);
 
       return res.status(200).send({
         sucess: true,
@@ -53,15 +55,18 @@ export class OrderController {
       });
     } catch (error: any) {
       if ((error.status = 404)) {
+        console.log(`PB not found, searching in Protheus...`);
         axios
           .get(`${process.env.PROTHEUS}?filial=${filial}&prodOrder=${op}`)
           .then(async function (response: any) {
             if (response.data["ORDER001"].length == 0) {
+              console.log(`OP not found.`);
               return res.status(404).send({
                 sucess: false,
                 msg: "Data not found",
               });
             } else {
+              console.log(`OP found, inserting in pocketbase....`);
               const protheusRet: Order = new Order(
                 response.data["ORDER001"][0].FILIAL.trim(),
                 response.data["ORDER001"][0].OP.trim(),
@@ -73,7 +78,11 @@ export class OrderController {
 
               try {
                 await pb.collection("order").create(protheusRet);
+                console.log(`OP sucessfully inserted to Pocketbase.`);
               } catch (error: any) {
+                console.log(`Error while inserting in Pocketbase, error:`);
+                console.log(error.toString());
+
                 return res.status(500).send({
                   sucess: false,
                   msg: error.toString(),
@@ -88,6 +97,7 @@ export class OrderController {
             }
           })
           .catch(function (error: any) {
+            console.log(error.toString());
             return res.status(500).send({
               sucess: false,
               msg: error.toString(),

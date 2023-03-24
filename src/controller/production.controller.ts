@@ -91,6 +91,9 @@ export class ProductionController {
 
   public async postProduction(req: Request, res: Response) {
     const nextProductionData = async (body: any) => {
+      console.log(`\r\n********************`);
+      console.log("Trying to post new production...");
+
       const now = new Date();
       const month = [
         "01",
@@ -126,6 +129,7 @@ export class ProductionController {
             hrfim: `${now.getHours()}:${now.getMinutes()}`,
             numero: 1,
           };
+
           return data;
         } else {
           const data = {
@@ -137,14 +141,16 @@ export class ProductionController {
             }${now.getDate()}`,
             hrfim: `${now.getHours()}:${now.getMinutes()}`,
           };
+
           return data;
         }
       } catch (error: any) {
-        console.log(error.toString);
+        console.log(error.toString());
       }
     };
 
     const body = req.body;
+
     const productionData = await nextProductionData(body);
 
     try {
@@ -166,6 +172,7 @@ export class ProductionController {
 
       const record = await pb.collection("production").create(data);
       const productionFiltered = new Production(
+        record.id,
         record.filial,
         record.op,
         record.codigo,
@@ -177,15 +184,17 @@ export class ProductionController {
         record.hr_inicio,
         record.dt_fim,
         record.hr_fim,
-        record.usuario
+        record.usuario,
+        record.numero
       );
-
+      console.log("Production successfully inserted");
       return res.status(200).send({
         sucess: true,
         msg: "Production Route: postProduction",
         data: productionFiltered,
       });
     } catch (error: any) {
+      console.log("Error while inserting production");
       return res.status(500).send({
         sucess: false,
         msg: "Production Route: postProduction",

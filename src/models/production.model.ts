@@ -1,5 +1,6 @@
 export class Production {
   constructor(
+    public id: string,
     public filial: string,
     public op: string,
     public codigo: string,
@@ -11,8 +12,10 @@ export class Production {
     public hr_inicio: number,
     public dt_fim: number,
     public hr_fim: number,
-    public usuario: number
+    public usuario: number,
+    public numero: number
   ) {
+    this.id;
     this.filial;
     this.op;
     this.codigo;
@@ -25,5 +28,6 @@ export class Production {
     this.dt_fim;
     this.hr_fim;
     this.usuario;
+    this.numero;
   }
 }
