@@ -2,6 +2,7 @@ const PocketBase = require("pocketbase/cjs");
 import { Request, Response } from "express";
 import * as dotenv from "dotenv";
 import { Production } from "../models/production.model";
+import { ResumeProduction } from "../models/resumeProduction.model";
 
 dotenv.config();
 
@@ -198,6 +199,98 @@ export class ProductionController {
       return res.status(500).send({
         sucess: false,
         msg: "Production Route: postProduction",
+        data: error.toString(),
+      });
+    }
+  }
+
+  public async getResumeProduction(req: Request, res: Response) {
+    const { qtd, filial } = req.query;
+    let returnData: any = [];
+    let opData: any = [];
+    let qtdPallet = 0;
+    let dt_inicio = 0;
+    let hr_inicio = 0;
+    let dt_fim = 0;
+    let hr_fim = 0;
+
+    try {
+      console.log(
+        `Trying to get last ${qtd} productions from filial ${filial}`
+      );
+
+      const opDataResultList = await pb.collection("order").getList(1, qtd, {
+        filter: `filial =  '${filial}'`,
+        sort: "-created",
+      });
+
+      opDataResultList.items.forEach((e: any) => {
+        const singleProduction = {
+          filial: e.filial,
+          op: e.op,
+          codigo: e.codigo,
+          produto: e.produto,
+          lote: e.lote,
+        };
+        opData = [...opData, singleProduction];
+      });
+
+      for (let index = 0; index < opData.length; index++) {
+        // console.log(opData[index].op);
+        const totalProdRecords = await pb.collection("production").getFullList({
+          sort: "-created",
+          filter: `op = '${opData[index].op}' && filial = '${opData[index].filial}'`,
+        });
+
+        const lastIndex =
+          totalProdRecords.length === 1 ? 0 : totalProdRecords.length - 1;
+
+        const total = totalProdRecords.reduce((acc: number, record: any) => {
+          qtdPallet += 1;
+          return acc + Number(record.quantidade);
+        }, 0);
+
+        if (totalProdRecords[0] === undefined) {
+          dt_inicio = 0;
+          hr_inicio = 0;
+          dt_fim = 0;
+          hr_fim = 0;
+        } else {
+          dt_inicio = totalProdRecords[lastIndex].dt_inicio;
+          hr_inicio = totalProdRecords[lastIndex].hr_inicio;
+          dt_fim = totalProdRecords[0].dt_fim;
+          hr_fim = totalProdRecords[0].hr_fim;
+        }
+
+        // console.log(total, qtdPallet, dt_inicio, hr_inicio, dt_fim, hr_fim);
+        const data = new ResumeProduction(
+          opData[index].filial,
+          opData[index].op,
+          opData[index].codigo,
+          opData[index].produto,
+          opData[index].lote,
+          total,
+          qtdPallet,
+          dt_inicio,
+          hr_inicio,
+          dt_fim,
+          hr_fim
+        );
+
+        returnData = [...returnData, data];
+        qtdPallet = 0;
+      }
+
+      return res.status(200).send({
+        sucess: true,
+        msg: "Production Route: getResumeProduction",
+        data: returnData,
+      });
+    } catch (error: any) {
+      console.log("Error while consulting production");
+      return res.status(500).send({
+        sucess: false,
+        msg: "Production Route: getResumeProduction",
         data: error.toString(),
       });
     }

@@ -14,6 +14,7 @@ export const orderRoutes = () => {
     "/production/lastNumber",
     new ProductionController().getLastProductionNumber
   );
+  app.get("/production/resume", new ProductionController().getResumeProduction);
 
   return app;
 };

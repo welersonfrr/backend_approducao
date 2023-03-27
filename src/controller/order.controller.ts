@@ -42,7 +42,9 @@ export class OrderController {
         record.filial,
         record.op,
         record.codigo,
+        record.codbel,
         record.produto,
+        record.qtdpad,
         record.lote,
         record.dtvalidade
       );
@@ -71,7 +73,9 @@ export class OrderController {
                 response.data["ORDER001"][0].FILIAL.trim(),
                 response.data["ORDER001"][0].OP.trim(),
                 response.data["ORDER001"][0].CODIGO.trim(),
+                response.data["ORDER001"][0].CODBEL.trim(),
                 response.data["ORDER001"][0].PRODUTO.trim(),
+                response.data["ORDER001"][0].QTDPAD,
                 response.data["ORDER001"][0].LOTE.trim(),
                 response.data["ORDER001"][0].DTVALIDADE.trim()
               );
