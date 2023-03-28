@@ -14,7 +14,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send({
     sucess: true,
-    msg: "Api express approducao online.",
+    msg: "Api approducao online.",
     data: [],
   });
 });
