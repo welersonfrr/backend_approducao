@@ -300,7 +300,6 @@ export class ProductionController {
 
   public async getAllNonConfirmed(req: Request, res: Response) {
     const { filial } = req.query;
-    const promisses: any = [];
     let nonConfirmedData: Array<any> = [];
     let dt_inicio = 0;
     let hr_inicio = 0;
@@ -327,12 +326,9 @@ export class ProductionController {
           0
         );
 
-        const qtdPallet = totalProdRecords.reduce(
-          (acc: number, record: any) => {
-            return acc + 1;
-          },
-          0
-        );
+        const qtdPallet = totalProdRecords.reduce((acc: number) => {
+          return acc + 1;
+        }, 0);
 
         if (totalProdRecords[0] != undefined) {
           dt_inicio = totalProdRecords[0].dt_inicio;
