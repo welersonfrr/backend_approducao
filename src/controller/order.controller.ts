@@ -59,7 +59,9 @@ export class OrderController {
       if ((error.status = 404)) {
         console.log(`PB not found, searching in Protheus...`);
         axios
-          .get(`${process.env.PROTHEUS}?filial=${filial}&prodOrder=${op}`)
+          .get(`${process.env.PROTHEUS}?filial=${filial}&prodOrder=${op}`, {
+            Authorization: `${process.env.BASICAUTH}`,
+          })
           .then(async function (response: any) {
             if (response.data["ORDER001"].length == 0) {
               console.log(`OP not found.`);
