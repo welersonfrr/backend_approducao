@@ -15,6 +15,14 @@ export const orderRoutes = () => {
     new ProductionController().getLastProductionNumber
   );
   app.get("/production/resume", new ProductionController().getResumeProduction);
+  app.get(
+    "/production/confirmation",
+    new ProductionController().getAllNonConfirmed
+  );
+  app.post(
+    "/production/confirmation",
+    new ProductionController().postConfirmOp
+  );
 
   return app;
 };

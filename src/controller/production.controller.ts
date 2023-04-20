@@ -213,6 +213,7 @@ export class ProductionController {
     let hr_inicio = 0;
     let dt_fim = 0;
     let hr_fim = 0;
+    let obs = "";
 
     try {
       console.log(
@@ -226,17 +227,18 @@ export class ProductionController {
 
       opDataResultList.items.forEach((e: any) => {
         const singleProduction = {
+          confirmado: e.confirmado,
           filial: e.filial,
           op: e.op,
           codigo: e.codigo,
           produto: e.produto,
           lote: e.lote,
+          obs: e.obs,
         };
         opData = [...opData, singleProduction];
       });
 
       for (let index = 0; index < opData.length; index++) {
-        // console.log(opData[index].op);
         const totalProdRecords = await pb.collection("production").getFullList({
           sort: "-created",
           filter: `op = '${opData[index].op}' && filial = '${opData[index].filial}'`,
@@ -249,7 +251,6 @@ export class ProductionController {
           qtdPallet += 1;
           return acc + Number(record.quantidade);
         }, 0);
-
         if (totalProdRecords[0] === undefined) {
           dt_inicio = 0;
           hr_inicio = 0;
@@ -262,8 +263,8 @@ export class ProductionController {
           hr_fim = totalProdRecords[0].hr_fim;
         }
 
-        // console.log(total, qtdPallet, dt_inicio, hr_inicio, dt_fim, hr_fim);
         const data = new ResumeProduction(
+          opData[index].confirmado,
           opData[index].filial,
           opData[index].op,
           opData[index].codigo,
@@ -274,7 +275,8 @@ export class ProductionController {
           dt_inicio,
           hr_inicio,
           dt_fim,
-          hr_fim
+          hr_fim,
+          opData[index].obs
         );
 
         returnData = [...returnData, data];
@@ -291,6 +293,118 @@ export class ProductionController {
       return res.status(500).send({
         sucess: false,
         msg: "Production Route: getResumeProduction",
+        data: error.toString(),
+      });
+    }
+  }
+
+  public async getAllNonConfirmed(req: Request, res: Response) {
+    const { filial } = req.query;
+    const promisses: any = [];
+    let nonConfirmedData: Array<any> = [];
+    let dt_inicio = 0;
+    let hr_inicio = 0;
+    let dt_fim = 0;
+    let hr_fim = 0;
+
+    try {
+      const records = await pb.collection("order").getFullList({
+        sort: "-created",
+        filter: `filial = '${filial}' && confirmado != true`,
+      });
+
+      for (const record of records) {
+        const totalProdRecords = await pb.collection("production").getFullList({
+          sort: "-created",
+          filter: `op = '${record.op}' && filial = '${record.filial}'`,
+          $autoCancel: false,
+        });
+
+        const qtdProducao = totalProdRecords.reduce(
+          (acc: number, record: any) => {
+            return acc + Number(record.quantidade);
+          },
+          0
+        );
+
+        const qtdPallet = totalProdRecords.reduce(
+          (acc: number, record: any) => {
+            return acc + 1;
+          },
+          0
+        );
+
+        if (totalProdRecords[0] != undefined) {
+          dt_inicio = totalProdRecords[0].dt_inicio;
+          hr_inicio = totalProdRecords[0].hr_inicio;
+          dt_fim = totalProdRecords[qtdPallet - 1].dt_fim;
+          hr_fim = totalProdRecords[qtdPallet - 1].hr_fim;
+        }
+        const nonConfirmed = new Production(
+          record.id,
+          record.filial,
+          record.op,
+          record.codigo,
+          record.produto,
+          record.lote,
+          record.dt_validade,
+          qtdProducao,
+          dt_inicio,
+          hr_inicio,
+          dt_fim,
+          hr_fim,
+          undefined,
+          qtdPallet
+        );
+
+        nonConfirmedData = [...nonConfirmedData, nonConfirmed];
+      }
+
+      return res.status(200).send({
+        sucess: true,
+        msg: "Production Route: getAllNonConfirmed",
+        data: nonConfirmedData,
+      });
+    } catch (error: any) {
+      console.log("Error while consulting production");
+      return res.status(500).send({
+        sucess: false,
+        msg: "Production Route: getAllNonConfirmed",
+        data: error.toString(),
+      });
+    }
+  }
+
+  public async postConfirmOp(req: Request, res: Response) {
+    const body = req.body;
+    console.log(body);
+
+    try {
+      console.log(`Trying to post confirmation on id ${body.recId}`);
+      const record = await pb.collection("order").getOne(body.recId);
+
+      Object.keys(record).forEach((key) => {
+        if (key === "obs") {
+          record[key] = body.obs;
+        }
+        if (key === "confirmado") {
+          record[key] = true;
+        }
+      });
+
+      const updatedRec = await pb
+        .collection("order")
+        .update(body.recId, record);
+      return res.status(200).send({
+        sucess: true,
+        msg: "Production Route: postConfirmOp",
+        data: updatedRec,
+      });
+    } catch (error: any) {
+      console.log("Error while posting production");
+      return res.status(500).send({
+        sucess: false,
+        msg: "Production Route: postConfirmOp",
         data: error.toString(),
       });
     }

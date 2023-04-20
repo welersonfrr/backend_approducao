@@ -12,8 +12,9 @@ export class Production {
     public hr_inicio: number,
     public dt_fim: number,
     public hr_fim: number,
-    public usuario: number,
-    public numero: number
+    public usuario?: number,
+    public numero?: number,
+    public obs?: string
   ) {
     this.id;
     this.filial;
@@ -29,5 +30,6 @@ export class Production {
     this.hr_fim;
     this.usuario;
     this.numero;
+    this.obs;
   }
 }

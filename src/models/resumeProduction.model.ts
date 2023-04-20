@@ -1,5 +1,6 @@
 export class ResumeProduction {
   constructor(
+    public confirmado: boolean,
     public filial: string,
     public op: string,
     public codigo: string,
@@ -10,8 +11,10 @@ export class ResumeProduction {
     public dt_inicio: number,
     public hr_inicio: number,
     public dt_fim: number,
-    public hr_fim: number
+    public hr_fim: number,
+    public obs: string
   ) {
+    this.confirmado;
     this.filial;
     this.op;
     this.codigo;
@@ -23,5 +26,6 @@ export class ResumeProduction {
     this.hr_inicio;
     this.dt_fim;
     this.hr_fim;
+    this.obs;
   }
 }
