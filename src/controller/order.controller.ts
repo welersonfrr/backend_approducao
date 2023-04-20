@@ -60,7 +60,10 @@ export class OrderController {
         console.log(`PB not found, searching in Protheus...`);
         axios
           .get(`${process.env.PROTHEUS}?filial=${filial}&prodOrder=${op}`, {
-            Authorization: `${process.env.BASICAUTH}`,
+            auth: {
+              username: process.env.PROT_USER,
+              password: process.env.PROT_PASS,
+            },
           })
           .then(async function (response: any) {
             if (response.data["ORDER001"].length == 0) {
