@@ -78,7 +78,7 @@ export class OrderController {
                 response.data["ORDER001"][0].FILIAL.trim(),
                 response.data["ORDER001"][0].OP.trim(),
                 response.data["ORDER001"][0].CODIGO.trim(),
-                response.data["ORDER001"][0].CODBEL.trim(),
+                response.data["ORDER001"][0].CODBEL,
                 response.data["ORDER001"][0].PRODUTO.trim(),
                 response.data["ORDER001"][0].QTDPAD,
                 response.data["ORDER001"][0].LOTE.trim(),
