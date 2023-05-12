@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import * as dotenv from "dotenv";
 import { Production } from "../models/production.model";
 import { ResumeProduction } from "../models/resumeProduction.model";
+import { DateArray, ProductionCard } from "../models/productionCard";
 
 dotenv.config();
 
@@ -401,6 +402,233 @@ export class ProductionController {
       return res.status(500).send({
         sucess: false,
         msg: "Production Route: postConfirmOp",
+        data: error.toString(),
+      });
+    }
+  }
+  // v 1.1
+  public async getProductions(req: Request, res: Response) {
+    const { filial, confirmed } = req.query;
+    // let data: ProductionCard[] = [];
+    let data: any = [];
+    let prods: any = [];
+    let firstDt: string;
+
+    const prodValues = async (op: string) => {
+      const records = await pb.collection("production").getFullList({
+        filter: `filial = '${filial}' && op = '${op}'`,
+        $autoCancel: false,
+      });
+
+      if (records.length > 0) {
+        if (records[0].hasOwnProperty("dt_inicio")) {
+          firstDt = `${records[0].dt_inicio.substr(
+            6,
+            2
+          )}/${records[0].dt_inicio.substr(4, 2)}/${records[0].dt_inicio.substr(
+            0,
+            4
+          )}`;
+        } else {
+          firstDt = "00/00/0000";
+        }
+        const pallets = records.length;
+        const total = records.reduce((acc: number, record: any) => {
+          return acc + Number(record.quantidade);
+        }, 0);
+
+        return { pallets, total, firstDt };
+      } else {
+        return { pallets: 0, total: 0, firstDt: "NÃO INICIADO" };
+      }
+    };
+
+    const getImage = async (product: string) => {
+      const notFound = `${process.env.FILE_PATH}/images/cafq61o64nmvvge/holder_nNahs2DsiT.webp`;
+
+      try {
+        const record = await pb
+          .collection("images")
+          .getFirstListItem(`product = '${product}'`);
+
+        const link = `${process.env.FILE_PATH}/${record.collectionId}/${record.id}/${record.file}`;
+        return link;
+      } catch (error: any) {
+        if (error.status == 404) {
+          return notFound;
+        } else {
+          return "";
+        }
+      }
+    };
+
+    try {
+      const records = await pb.collection("order").getFullList({
+        sort: "-created",
+        filter: `filial = '${filial}'  && confirmado = ${confirmed}`,
+      });
+
+      for (const prod of records) {
+        const totais = await prodValues(prod.op);
+        const img = await getImage(prod.codigo);
+        const one = new ProductionCard(
+          prod.id,
+          img,
+          prod.op,
+          prod.codigo,
+          totais.pallets,
+          totais.total,
+          totais.firstDt
+        );
+        prods = [...prods, one];
+      }
+
+      const dates = prods.map((e: any) => {
+        return e.firstDt;
+      });
+      const uniqueDates = [...new Set(dates)];
+
+      if (uniqueDates.includes("NÃO INICIADO")) {
+        const teste = uniqueDates.splice(
+          uniqueDates.indexOf("NÃO INICIADO"),
+          1
+        );
+        uniqueDates.unshift(teste[0]);
+      }
+
+      uniqueDates.forEach((date: any) => {
+        const aux = prods.filter((prod: any) => prod.firstDt == date);
+        data = [...data, { [date]: aux }];
+      });
+
+      return res.status(200).send({
+        sucess: true,
+        msg: "Production Route: getProductions",
+        data: data,
+      });
+    } catch (error: any) {
+      console.log("Error while get productions");
+      return res.status(500).send({
+        sucess: false,
+        msg: "Production Route: getProductions",
+        data: error.toString(),
+      });
+    }
+  }
+
+  public async getDetails(req: Request, res: Response) {
+    const { filial, op } = req.query;
+    let data: any = [];
+
+    const getImage = async (product: string) => {
+      const notFound = `${process.env.FILE_PATH}/images/cafq61o64nmvvge/holder_nNahs2DsiT.webp`;
+
+      try {
+        const record = await pb
+          .collection("images")
+          .getFirstListItem(`product = '${product}'`);
+
+        const link = `${process.env.FILE_PATH}/${record.collectionId}/${record.id}/${record.file}`;
+        return link;
+      } catch (error: any) {
+        if (error.status == 404) {
+          return notFound;
+        } else {
+          return "";
+        }
+      }
+    };
+
+    const getValues = async () => {
+      let ret = {
+        pallet: 0,
+        total: 0,
+        first: {
+          data: "##/##/####",
+          hora: "##:##",
+        },
+        last: {
+          data: "##/##/####",
+          hora: "##:##",
+        },
+        producoes: [],
+      };
+
+      const formatData = (data: string) => {
+        return `${data.substr(6, 2)}/${data.substr(4, 2)}/${data.substr(0, 4)}`;
+      };
+
+      try {
+        const records = await pb.collection("production").getFullList({
+          filter: `filial = '${filial}' && op = '${op}'`,
+          $autoCancel: false,
+        });
+
+        if (records.length > 0) {
+          const pallets = records.length;
+          const total = records.reduce((acc: number, record: any) => {
+            return acc + Number(record.quantidade);
+          }, 0);
+
+          ret = {
+            pallet: pallets,
+            total: total,
+            producoes: records,
+            first: {
+              data: formatData(records[0].dt_inicio),
+              hora: records[0].hr_inicio,
+            },
+            last: {
+              data: formatData(records[records.length - 1].dt_fim),
+              hora: records[records.length - 1].hr_fim,
+            },
+          };
+          return ret;
+        } else {
+          return ret;
+        }
+      } catch (error) {
+        console.log(error);
+        return ret;
+      }
+    };
+
+    try {
+      const record = await pb
+        .collection("order")
+        .getFirstListItem(`filial='${filial}' && op='${op}'`);
+
+      const img = await getImage(record.codigo);
+      const values = await getValues();
+
+      data = {
+        id: record.id,
+        op: record.op,
+        img: img,
+        codigo: record.codigo,
+        produto: record.produto,
+        pallet: values.pallet,
+        total: values.total,
+        first: values.first,
+        last: values.last,
+        lote: record.lote,
+        obs: record.obs,
+        validade: record.validade,
+        producoes: values.producoes,
+      };
+
+      // data = record;
+
+      return res.status(200).send({
+        sucess: true,
+        msg: "Production Route: getDetails",
+        data: data,
+      });
+    } catch (error: any) {
+      console.log("Error while get details");
+      return res.status(500).send({
+        sucess: false,
+        msg: "Production Route: getDetails",
         data: error.toString(),
       });
     }
