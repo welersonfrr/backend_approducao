@@ -521,7 +521,7 @@ export class ProductionController {
     let data: any = [];
 
     const getImage = async (product: string) => {
-      const notFound = `${process.env.FILE_PATH}/images/cafq61o64nmvvge/holder_nNahs2DsiT.webp`;
+      const notFound = `${process.env.FILE_PATH}/odgczs6f5cgl2b7/ntmh965z8ndapx5/image_404_18A9ClQsUX.png`;
 
       try {
         const record = await pb
