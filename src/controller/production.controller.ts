@@ -379,6 +379,7 @@ export class ProductionController {
     try {
       console.log(`Trying to post confirmation on id ${body.recId}`);
       const record = await pb.collection("order").getOne(body.recId);
+      // console.log(record);
 
       Object.keys(record).forEach((key) => {
         if (key === "obs") {
@@ -386,6 +387,9 @@ export class ProductionController {
         }
         if (key === "confirmado") {
           record[key] = true;
+        }
+        if (key === "confirm_date") {
+          record[key] = new Date().toLocaleString("pt-br");
         }
       });
 
@@ -444,7 +448,7 @@ export class ProductionController {
     };
 
     const getImage = async (product: string) => {
-      const notFound = `${process.env.FILE_PATH}/odgczs6f5cgl2b7/ntmh965z8ndapx5/image_404_18A9ClQsUX.png`;
+      const notFound = `${process.env.NOT_FOUND_IMG}`;
 
       try {
         const record = await pb
@@ -521,7 +525,7 @@ export class ProductionController {
     let data: any = [];
 
     const getImage = async (product: string) => {
-      const notFound = `${process.env.FILE_PATH}/odgczs6f5cgl2b7/ntmh965z8ndapx5/image_404_18A9ClQsUX.png`;
+      const notFound = `${process.env.NOT_FOUND_IMG}`;
 
       try {
         const record = await pb
@@ -603,6 +607,7 @@ export class ProductionController {
 
       data = {
         id: record.id,
+        confirm_date: record.confirm_date,
         op: record.op,
         img: img,
         codigo: record.codigo,
