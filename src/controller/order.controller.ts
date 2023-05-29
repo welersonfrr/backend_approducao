@@ -115,4 +115,113 @@ export class OrderController {
       }
     }
   }
+  public async getMachineData(req: Request, res: Response) {
+    const { filial, op } = req.query;
+
+    const getImage = async (product: string) => {
+      const notFound = `${process.env.NOT_FOUND_IMG}`;
+
+      try {
+        const record = await pb
+          .collection("images")
+          .getFirstListItem(`product = '${product}'`);
+
+        const link = `${process.env.FILE_PATH}/${record.collectionId}/${record.id}/${record.file}`;
+        return link;
+      } catch (error: any) {
+        if (error.status == 404) {
+          return notFound;
+        } else {
+          return "";
+        }
+      }
+    };
+
+    const getValues = async () => {
+      let ret = {
+        pallet: 0,
+        total: 0,
+        first: {
+          data: "##/##/####",
+          hora: "##:##",
+        },
+        last: {
+          data: "##/##/####",
+          hora: "##:##",
+        },
+        producoes: [],
+      };
+
+      const formatData = (data: string) => {
+        return `${data.substr(6, 2)}/${data.substr(4, 2)}/${data.substr(0, 4)}`;
+      };
+
+      try {
+        const records = await pb.collection("production").getFullList({
+          filter: `filial = '${filial}' && op = '${op}'`,
+          $autoCancel: false,
+        });
+
+        if (records.length > 0) {
+          const pallets = records.length;
+          const total = records.reduce((acc: number, record: any) => {
+            return acc + Number(record.quantidade);
+          }, 0);
+
+          ret = {
+            pallet: pallets,
+            total: total,
+            producoes: records,
+            first: {
+              data: formatData(records[0].dt_inicio),
+              hora: records[0].hr_inicio,
+            },
+            last: {
+              data: formatData(records[records.length - 1].dt_fim),
+              hora: records[records.length - 1].hr_fim,
+            },
+          };
+          return ret;
+        } else {
+          return ret;
+        }
+      } catch (error) {
+        console.log(error);
+        return ret;
+      }
+    };
+
+    try {
+      const record = await pb
+        .collection("order")
+        .getFirstListItem(`filial='${filial}' && op='${op}'`);
+      const img = await getImage(record.codigo);
+      const values = await getValues();
+
+      const data = {
+        id: record.id,
+        op: record.op,
+        lote: record.lote,
+        codigo: record.codigo,
+        produto: record.produto,
+        qtdPad: record.qtdpad,
+        validade: record.validade,
+        img: img,
+        pallet: values.pallet,
+        producoes: values.total,
+      };
+      return res.status(200).send({
+        sucess: true,
+        msg: "Order Route: getMachineData",
+        data: data,
+      });
+    } catch (error: any) {
+      console.log("Error while get details");
+      return res.status(500).send({
+        sucess: false,
+        msg: "Order Route: getMachineData",
+        data: error.toString(),
+      });
+    }
+  }
 }

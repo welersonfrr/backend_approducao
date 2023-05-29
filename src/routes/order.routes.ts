@@ -7,6 +7,7 @@ export const orderRoutes = () => {
 
   app.get("/", new OrderController().getAllOrders);
   app.get("/op", new OrderController().getSingleOrder);
+  app.get("/machine", new OrderController().getMachineData);
   app.get("/production", new ProductionController().getProductions);
   app.get("/details", new ProductionController().getDetails);
   app.post("/production", new ProductionController().postProduction);
